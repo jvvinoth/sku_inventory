@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SKU Generator & Inventory — MonstarX</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: #e2e0d8;
+      --border-hover: #c8c6bc;
+      --text: #1a1916;
+      --text-muted: #6b6960;
+      --text-hint: #a8a59e;
+      --accent: #1a1916;
+      --success-bg: #eaf3de;
+      --success-text: #3b6d11;
+      --warning-bg: #faeeda;
+      --warning-text: #854f0b;
+      --danger-bg: #fcebeb;
+      --danger-text: #a32d2d;
+      --info-bg: #e6f1fb;
+      --info-text: #185fa5;
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--text);
+      border-radius: 50%;
+    }
+
+    .header-sub {
+      font-size: 12px;
+      color: var(--text-hint);
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      margin-bottom: 1.5rem;
+      width: fit-content;
+    }
+
+    .tab {
+      padding: 7px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab:hover:not(.active) {
+      color: var(--text);
+    }
+
+    .pane {
+      display: none;
+    }
+
+    .pane.active {
+      display: block;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.25rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+
+      .grid-2,
+      .grid-3,
+      .grid-4 {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .field[style*="grid-column"] {
+        grid-column: span 1 !important;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .field select,
+    .field input[type="text"],
+    .field input[type="number"] {
+      font-size: 14px;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+
+    .field select:focus,
+    .field input:focus {
+      border-color: var(--text);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--bg);
+      border-color: var(--border-hover);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn-primary:hover {
+      background: #333;
+    }
+
+    .btn-sm {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+
+    .btn-danger {
+      color: var(--danger-text);
+      border-color: #f7c1c1;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-bg);
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .margin-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* SKU result */
+    .sku-result {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .sku-code {
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--text);
+    }
+
+    .meta-pill {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+    }
+
+    .meta-pill .k {
+      font-size: 11px;
+      color: var(--text-hint);
+    }
+
+    .meta-pill .v {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    .barcode-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 1.25rem;
+    }
+
+    .barcode-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .barcode-num {
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: #333;
+    }
+
+    .barcode-desc {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+
+    .barcode-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+
+    .stat-card .k {
+      font-size: 11px;
+      color: var(--text-hint);
+      font-weight: 500;
+    }
+
+    .stat-card .v {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 4px;
+      letter-spacing: -0.02em;
+    }
+
+    /* Table */
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 180px;
+      font-size: 13px;
+      padding: 7px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .search-input:focus {
+      border-color: var(--text);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      background: var(--bg);
+    }
+
+    td {
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--bg);
+    }
+
+    .mono {
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-ok {
+      background: var(--success-bg);
+      color: var(--success-text);
+    }
+
+    .badge-low {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+    }
+
+    .badge-out {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+    }
+
+    .stock-input {
+      width: 64px;
+      font-size: 13px;
+      padding: 4px 7px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+    }
+
+    .stock-input:focus {
+      border-color: var(--text);
+    }
+
+    .empty-row td {
+      text-align: center;
+      padding: 2.5rem;
+      color: var(--text-hint);
+      font-size: 13px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 2.5rem 0;
+      margin-top: 1.5rem;
+    }
+
+    .footer span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .footer img {
+      height: 22px;
+      filter: invert(1) opacity(0.5);
+      /* Turns white logo dark and mutes it */
+      transition: opacity 0.2s;
+    }
+
+    .footer img:hover {
+      filter: invert(1) opacity(0.8);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      SKU Generator & Inventory
+    </div>
+    <div class="header-sub">Clothing & Shoes · POC Demo</div>
+  </header>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('generate')">Generate SKU</button>
+      <button class="tab" id="inv-tab" onclick="switchTab('inventory')">Inventory <span id="inv-count-badge"
+          style="color:#a8a59e; font-weight:400;"></span></button>
+    </div>
+
+    <!-- GENERATE TAB -->
+    <div class="pane active" id="pane-generate">
+
+      <div class="card">
+        <div class="card-title">Product details</div>
+        <div class="grid-3" style="margin-bottom:12px">
+          <div class="field">
+            <label>Category</label>
+            <select id="cat">
+              <option value="CLT">Clothing</option>
+              <option value="SHO">Shoes</option>
+              <option value="ACC">Accessories</option>
+              <option value="BAG">Bags</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Sub-type</label>
+            <select id="sub">
+              <option value="TSH">T-Shirt</option>
+              <option value="JNS">Jeans</option>
+              <option value="DRS">Dress</option>
+              <option value="JKT">Jacket</option>
+              <option value="SRT">Shorts</option>
+              <option value="PLO">Polo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Brand / Supplier code</label>
+            <input id="brand" type="text" value="NKX" maxlength="4" placeholder="e.g. NKX"
+              style="text-transform:uppercase" />
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label>Color</label>
+            <select id="color">
+              <option value="BLK">Black</option>
+              <option value="WHT">White</option>
+              <option value="NVY">Navy</option>
+              <option value="RED">Red</option>
+              <option value="GRY">Grey</option>
+              <option value="BRN">Brown</option>
+              <option value="GRN">Green</option>
+              <option value="BLU">Blue</option>
+              <option value="PNK">Pink</option>
+              <option value="YLW">Yellow</option>
+              <option value="MLT">Multicolor</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Size</label>
+            <select id="size">
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M" selected>M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+              <option disabled>──── Shoe sizes ────</option>
+              <option value="36">36</option>
+              <option value="37">37</option>
+              <option value="38">38</option>
+              <option value="39">39</option>
+              <option value="40">40</option>
+              <option value="41">41</option>
+              <option value="42">42</option>
+              <option value="43">43</option>
+              <option value="44">44</option>
+              <option value="45">45</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Barcode format</label>
+            <select id="fmt">
+              <option value="CODE128">Code 128 (recommended)</option>
+              <option value="EAN13">EAN-13</option>
+              <option value="CODE39">Code 39</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pricing & stock</div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="field" style="grid-column: span 2">
+            <label>Product name</label>
+            <input id="pname" type="text" placeholder="e.g. Classic Cotton Tee" />
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label>Cost price (MYR)</label>
+            <input id="cost" type="number" placeholder="0.00" min="0" step="0.01" />
+          </div>
+          <div class="field">
+            <label>Selling price (MYR)</label>
+            <input id="price" type="number" placeholder="0.00" min="0" step="0.01" />
+          </div>
+          <div class="field">
+            <label>Initial stock qty</label>
+            <input id="stock" type="number" placeholder="0" min="0" step="1" value="10" />
+          </div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-primary" onclick="generate()">Generate SKU + Barcode</button>
+          <span class="margin-hint" id="margin-display"></span>
+        </div>
+      </div>
+
+      <div class="card" id="result-section" style="display:none">
+        <div class="card-title">Generated SKU</div>
+        <div class="sku-result">
+          <span class="sku-code" id="sku-text">–</span>
+          <button class="btn btn-sm" onclick="copySku()">Copy SKU</button>
+        </div>
+        <div class="grid-4" id="meta-grid" style="margin-bottom:0"></div>
+        <div class="barcode-container">
+          <div class="barcode-card">
+            <canvas id="barcode"></canvas>
+            <div class="barcode-num" id="barcode-num">–</div>
+            <div class="barcode-desc" id="product-label">–</div>
+            <div class="barcode-actions">
+              <button class="btn btn-sm" onclick="downloadBarcode()">Download PNG</button>
+              <button class="btn btn-sm" onclick="printBarcode()">Print label</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- INVENTORY TAB -->
+    <div class="pane" id="pane-inventory">
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="k">Total SKUs</div>
+          <div class="v" id="s-total">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Total stock</div>
+          <div class="v" id="s-stock">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Inventory value</div>
+          <div class="v" id="s-value">RM 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Low / out of stock</div>
+          <div class="v" id="s-low">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <input class="search-input" id="search" type="text" placeholder="Search SKU, name, color…"
+            oninput="renderTable()" />
+          <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
+          <button class="btn btn-sm btn-danger" onclick="clearAll()">Clear all</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Color</th>
+                <th>Size</th>
+                <th>Cost</th>
+                <th>Price</th>
+                <th>Margin</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="inv-body">
+              <tr class="empty-row">
+                <td colspan="10">No items yet — generate a SKU to get started</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <span>Powered by</span>
+      <img src="https://www.retailetics.com/assets/img/Retailetics-White.png" alt="Retailetics">
+    </div>
+  </div>
+
+  <script>
+    let inventory = [];
+    let counter = 1;
+    let currentSku = '';
+    let currentBarcodeValue = '';
+    let currentItemData = null;
+
+    const catMap = { CLT: 'Clothing', SHO: 'Shoes', ACC: 'Accessories', BAG: 'Bags' };
+    const subMap = { TSH: 'T-Shirt', JNS: 'Jeans', DRS: 'Dress', JKT: 'Jacket', SRT: 'Shorts', PLO: 'Polo', SNK: 'Sneakers', SDN: 'Sandals', BTD: 'Boots', FLT: 'Flats', HGL: 'Heels', LFR: 'Loafers' };
+    const colorMap = { BLK: 'Black', WHT: 'White', NVY: 'Navy', RED: 'Red', GRY: 'Grey', BRN: 'Brown', GRN: 'Green', BLU: 'Blue', PNK: 'Pink', YLW: 'Yellow', MLT: 'Multicolor' };
+
+    function pad(n, len) { return String(n).padStart(len, '0'); }
+
+    function switchTab(t) {
+      document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', ['generate', 'inventory'][i] === t));
+      document.querySelectorAll('.pane').forEach((el, i) => el.classList.toggle('active', ['pane-generate', 'pane-inventory'][i] === 'pane-' + t));
+      if (t === 'inventory') { renderTable(); updateSummary(); }
+    }
+
+    document.getElementById('cat').addEventListener('change', function () {
+      const sub = document.getElementById('sub');
+      const clothing = ['TSH', 'JNS', 'DRS', 'JKT', 'SRT', 'PLO'];
+      const shoes = ['SNK', 'SDN', 'BTD', 'FLT', 'HGL', 'LFR'];
+      const opts = this.value === 'SHO' ? shoes : clothing;
+      sub.innerHTML = opts.map(o => `<option value="${o}">${subMap[o]}</option>`).join('');
+    });
+
+    document.getElementById('price').addEventListener('input', updateMarginDisplay);
+    document.getElementById('cost').addEventListener('input', updateMarginDisplay);
+
+    function calcMargin(cost, price) {
+      if (!cost || !price || price <= 0) return null;
+      return ((price - cost) / price * 100).toFixed(1);
+    }
+
+    function updateMarginDisplay() {
+      const cost = parseFloat(document.getElementById('cost').value);
+      const price = parseFloat(document.getElementById('price').value);
+      const m = calcMargin(cost, price);
+      const el = document.getElementById('margin-display');
+      if (m !== null) {
+        const col = m >= 40 ? '#3b6d11' : m >= 20 ? '#854f0b' : '#a32d2d';
+        el.innerHTML = `Margin: <span style="color:${col}; font-weight:600">${m}%</span>`;
+      } else { el.textContent = ''; }
+    }
+
+    function generateEAN13(sku) {
+      let hash = 0;
+      for (let c of sku) hash = (hash * 31 + c.charCodeAt(0)) & 0x7FFFFFFF;
+      const base = pad(Math.abs(hash) % 1000000000000, 12);
+      let odd = 0, even = 0;
+      for (let i = 0; i < 12; i++) { if (i % 2 === 0) odd += parseInt(base[i]); else even += parseInt(base[i]); }
+      const check = (10 - ((odd + even * 3) % 10)) % 10;
+      return base + check;
+    }
+
+    function generate() {
+      const cat = document.getElementById('cat').value;
+      const sub = document.getElementById('sub').value;
+      const brand = document.getElementById('brand').value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 4) || 'XXX';
+      const color = document.getElementById('color').value;
+      const size = document.getElementById('size').value;
+      const fmt = document.getElementById('fmt').value;
+      const pname = document.getElementById('pname').value.trim() || `${subMap[sub]} ${colorMap[color]}`;
+      const cost = parseFloat(document.getElementById('cost').value) || 0;
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const stock = parseInt(document.getElementById('stock').value) || 0;
+
+      const seq = pad(counter++, 4);
+      const yr = String(new Date().getFullYear()).substring(2);
+      const sku = `${brand}-${cat}${sub}-${color}-${size}-${yr}${seq}`;
+      currentSku = sku;
+
+      const barcodeValue = fmt === 'EAN13' ? generateEAN13(sku) : sku;
+      currentBarcodeValue = barcodeValue;
+
+      document.getElementById('sku-text').textContent = sku;
+      document.getElementById('result-section').style.display = 'block';
+
+      const m = calcMargin(cost, price);
+      document.getElementById('meta-grid').innerHTML = `
+      <div class="meta-pill"><div class="k">Category</div><div class="v">${catMap[cat]}</div></div>
+      <div class="meta-pill"><div class="k">Type</div><div class="v">${subMap[sub]}</div></div>
+      <div class="meta-pill"><div class="k">Color</div><div class="v">${colorMap[color]}</div></div>
+      <div class="meta-pill"><div class="k">Size</div><div class="v">${size}</div></div>
+      <div class="meta-pill"><div class="k">Cost</div><div class="v">${cost ? 'RM ' + cost.toFixed(2) : '–'}</div></div>
+      <div class="meta-pill"><div class="k">Price</div><div class="v">${price ? 'RM ' + price.toFixed(2) : '–'}</div></div>
+      <div class="meta-pill"><div class="k">Margin</div><div class="v">${m !== null ? m + '%' : '–'}</div></div>
+      <div class="meta-pill"><div class="k">Stock</div><div class="v">${stock} units</div></div>
+    `;
+
+      document.getElementById('barcode-num').textContent = barcodeValue;
+      document.getElementById('product-label').textContent = `${pname} · Size ${size} · ${brand}`;
+
+      try {
+        JsBarcode('#barcode', barcodeValue, { format: fmt, width: 2, height: 60, displayValue: false, margin: 10, background: '#ffffff', lineColor: '#000000' });
+      } catch (e) {
+        JsBarcode('#barcode', sku.replace(/[^A-Z0-9\-]/gi, ''), { format: 'CODE128', width: 2, height: 60, displayValue: false, margin: 10, background: '#ffffff', lineColor: '#000000' });
+      }
+
+      const itemData = { sku, pname, cat: catMap[cat], sub: subMap[sub], color: colorMap[color], size, brand, cost, price, stock, barcodeValue, fmt, yr, seq };
+      currentItemData = itemData;
+      inventory.push(itemData);
+      document.getElementById('inv-count-badge').textContent = `(${inventory.length})`;
+    }
+
+    function renderTable() {
+      const q = (document.getElementById('search').value || '').toLowerCase();
+      const filtered = inventory.filter(r =>
+        r.sku.toLowerCase().includes(q) || r.pname.toLowerCase().includes(q) ||
+        r.color.toLowerCase().includes(q) || r.sub.toLowerCase().includes(q)
+      );
+      const tbody = document.getElementById('inv-body');
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">${inventory.length ? 'No results matching your search' : 'No items yet — generate a SKU to get started'}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filtered.map(r => {
+        const idx = inventory.indexOf(r);
+        const m = calcMargin(r.cost, r.price);
+        const st = r.stock === 0 ? 'badge-out' : r.stock <= 3 ? 'badge-low' : 'badge-ok';
+        const stLabel = r.stock === 0 ? 'Out of stock' : r.stock <= 3 ? 'Low stock' : 'In stock';
+        return `<tr>
+        <td class="mono">${r.sku}</td>
+        <td>${r.pname}</td>
+        <td>${r.color}</td>
+        <td>${r.size}</td>
+        <td class="mono">${r.cost ? 'RM ' + r.cost.toFixed(2) : '–'}</td>
+        <td class="mono">${r.price ? 'RM ' + r.price.toFixed(2) : '–'}</td>
+        <td>${m !== null ? m + '%' : '–'}</td>
+        <td><input class="stock-input" type="number" value="${r.stock}" min="0" step="1" onchange="updateStock(${idx}, this.value)"/></td>
+        <td><span class="badge ${st}">${stLabel}</span></td>
+        <td><button class="btn btn-sm btn-danger" onclick="removeItem(${idx})">Remove</button></td>
+      </tr>`;
+      }).join('');
+      updateSummary();
+    }
+
+    function updateStock(i, val) {
+      inventory[i].stock = parseInt(val) || 0;
+      renderTable();
+    }
+
+    function removeItem(i) {
+      inventory.splice(i, 1);
+      document.getElementById('inv-count-badge').textContent = inventory.length ? `(${inventory.length})` : '';
+      renderTable();
+    }
+
+    function clearAll() {
+      if (!inventory.length || !confirm('Clear all inventory items?')) return;
+      inventory = [];
+      document.getElementById('inv-count-badge').textContent = '';
+      renderTable();
+    }
+
+    function updateSummary() {
+      document.getElementById('s-total').textContent = inventory.length;
+      document.getElementById('s-stock').textContent = inventory.reduce((a, r) => a + r.stock, 0).toLocaleString();
+      document.getElementById('s-value').textContent = 'RM ' + inventory.reduce((a, r) => a + (r.price * r.stock), 0).toFixed(0);
+      document.getElementById('s-low').textContent = inventory.filter(r => r.stock <= 3).length;
+    }
+
+    function exportCSV() {
+      if (!inventory.length) { alert('No inventory to export yet.'); return; }
+      const headers = ['SKU', 'Product Name', 'Category', 'Sub-type', 'Brand', 'Color', 'Size', 'Cost (MYR)', 'Price (MYR)', 'Margin %', 'Stock Qty', 'Inventory Value (MYR)', 'Barcode Value', 'Barcode Format'];
+      const rows = inventory.map(r => {
+        const m = calcMargin(r.cost, r.price) || '';
+        return [r.sku, r.pname, r.cat, r.sub, r.brand, r.color, r.size, r.cost.toFixed(2), r.price.toFixed(2), m, r.stock, (r.price * r.stock).toFixed(2), r.barcodeValue, r.fmt];
+      });
+      const csv = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
+      const a = document.createElement('a');
+      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = 'inventory_' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+    }
+
+    function copySku() {
+      navigator.clipboard.writeText(currentSku).catch(() => { });
+      const btn = event.target;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy SKU', 1500);
+    }
+
+    function downloadBarcode() {
+      const canvas = document.getElementById('barcode');
+      const a = document.createElement('a');
+      a.download = currentSku + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    function printBarcode() {
+      const canvas = document.getElementById('barcode');
+      const img = canvas.toDataURL('image/png');
+      const data = currentItemData || {};
+
+      const name = data.pname || document.getElementById('product-label').textContent.split(' · ')[0];
+      const size = data.size || '';
+      const priceStr = data.price ? 'RM ' + data.price.toFixed(2) : '';
+      const num = data.barcodeValue || document.getElementById('barcode-num').textContent;
+
+      const w = window.open('', '_blank');
+      w.document.write(`<!DOCTYPE html><html><head><title>Barcode Label</title>
+      <style>
+      body{text-align:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:20px;background:#fff;margin:0;}
+      .label-box { display:inline-block; padding:20px; border:1px dashed #ccc; border-radius:8px; min-width:240px;}
+      .name {font-size:15px; font-weight:600; margin-bottom:4px; color:#1a1916; text-transform:uppercase; letter-spacing:0.02em;}
+      .meta {font-size:13px; color:#6b6960; margin-bottom:8px;}
+      .price {font-size:20px; font-weight:700; margin-bottom:12px; color:#1a1916;}
+      img{display:block;margin:0 auto;}
+      .num{font-size:12px; font-family:'SF Mono','Fira Code','Courier New',monospace; letter-spacing:0.1em; margin-top:8px; color:#1a1916;}
+      </style></head>
+      <body>
+        <div class="label-box">
+          <div class="name">${name}</div>
+          ${size ? `<div class="meta">Size ${size}</div>` : ''}
+          ${priceStr ? `<div class="price">${priceStr}</div>` : ''}
+          <img src="${img}"/>
+          <div class="num">${num}</div>
+        </div>
+        <script>window.onload=function(){window.print();setTimeout(()=>window.close(),500)}<\/script>
+      </body></html>`);
+      w.document.close();
+    }
+  </script>
+</body>
+
+</html>
