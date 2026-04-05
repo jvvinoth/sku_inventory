@@ -574,6 +574,7 @@
               <option value="SRT">Shorts</option>
               <option value="PLO">Polo</option>
             </select>
+            <input type="text" id="sub-other" placeholder="Specify other..." style="display:none; margin-top:6px;" />
           </div>
           <div class="field">
             <label>Brand / Supplier code</label>
@@ -619,6 +620,7 @@
               <option value="44">44</option>
               <option value="45">45</option>
             </select>
+            <input type="text" id="size-input" placeholder="e.g. OS, M, 20x30..." style="display:none;" />
           </div>
           <div class="field">
             <label>Barcode format</label>
@@ -703,6 +705,18 @@
         </div>
       </div>
 
+      <div class="card" id="category-summary-card" style="display:none; margin-bottom: 1.25rem;">
+        <div class="card-title">Category Summary</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Category</th><th>Sold Qty</th><th>Balance Qty</th><th>Total Sales Value</th></tr>
+            </thead>
+            <tbody id="cat-summary-body"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="toolbar">
           <input class="search-input" id="search" type="text" placeholder="Search SKU, name, color…"
@@ -721,7 +735,8 @@
                 <th>Cost</th>
                 <th>Price</th>
                 <th>Margin</th>
-                <th>Stock</th>
+                <th>Sold</th>
+                <th>Balance</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -751,8 +766,18 @@
     let currentItemData = null;
 
     const catMap = { CLT: 'Clothing', SHO: 'Shoes', ACC: 'Accessories', BAG: 'Bags' };
-    const subMap = { TSH: 'T-Shirt', JNS: 'Jeans', DRS: 'Dress', JKT: 'Jacket', SRT: 'Shorts', PLO: 'Polo', SNK: 'Sneakers', SDN: 'Sandals', BTD: 'Boots', FLT: 'Flats', HGL: 'Heels', LFR: 'Loafers' };
+    const subMap = { 
+      TSH: 'T-Shirt', JNS: 'Jeans', DRS: 'Dress', JKT: 'Jacket', SRT: 'Shorts', PLO: 'Polo', 
+      SNK: 'Sneakers', SDN: 'Sandals', BTD: 'Boots', FLT: 'Flats', HGL: 'Heels', LFR: 'Loafers',
+      JWL: 'Jewelry', HDW: 'Headwear', NCK: 'Neckwear', WST: 'Waist & Body', HNA: 'Hand & Arm', FTW: 'Footwear (Acc)', EYE: 'Eyewear', HBC: 'Handbags & Carried', TCH: 'Technical / Modern', OTH: 'Other',
+      TOT: 'Tote Bag', SHB: 'Shoulder Bag', CRB: 'Crossbody Bag', HOB: 'Hobo Bag', SAT: 'Satchel', BGT: 'Baguette Bag', BCK: 'Bucket Bag', BWL: 'Bowling Bag', DOC: 'Doctor Bag', SDL: 'Saddle Bag', MSG: 'Messenger Bag', SHP: 'Shopper Bag', CLU: 'Clutch Bag', ENV: 'Envelope Clutch', BOX: 'Box Clutch', MIN: 'Minaudière', WRS: 'Wristlet', PCH: 'Pochette', BPK: 'Backpack', DAY: 'Daypack', DUF: 'Duffel Bag', WKN: 'Weekender Bag', GRM: 'Garment Bag', BLT: 'Belt Bag', CAM: 'Camera Bag', LAP: 'Laptop Bag', DIA: 'Diaper Bag', BCH: 'Beach / Wicker Bag', MIC: 'Micro Bag', CNV: 'Convertible Bag', FLP: 'Flap Bag', DRW: 'Drawstring Bag', FRM: 'Frame Bag', QLT: 'Quilted Bag'
+    };
     const colorMap = { BLK: 'Black', WHT: 'White', NVY: 'Navy', RED: 'Red', GRY: 'Grey', BRN: 'Brown', GRN: 'Green', BLU: 'Blue', PNK: 'Pink', YLW: 'Yellow', MLT: 'Multicolor' };
+
+    const clothingOpts = ['TSH', 'JNS', 'DRS', 'JKT', 'SRT', 'PLO'];
+    const shoesOpts = ['SNK', 'SDN', 'BTD', 'FLT', 'HGL', 'LFR'];
+    const accOpts = ['JWL', 'HDW', 'NCK', 'WST', 'HNA', 'FTW', 'EYE', 'HBC', 'TCH', 'OTH'];
+    const bagsOpts = ['TOT', 'SHB', 'CRB', 'HOB', 'SAT', 'BGT', 'BCK', 'BWL', 'DOC', 'SDL', 'MSG', 'SHP', 'CLU', 'ENV', 'BOX', 'MIN', 'WRS', 'PCH', 'BPK', 'DAY', 'DUF', 'WKN', 'GRM', 'BLT', 'CAM', 'LAP', 'DIA', 'BCH', 'MIC', 'CNV', 'FLP', 'DRW', 'FRM', 'QLT'];
 
     function pad(n, len) { return String(n).padStart(len, '0'); }
 
@@ -763,11 +788,40 @@
     }
 
     document.getElementById('cat').addEventListener('change', function () {
+      const cat = this.value;
       const sub = document.getElementById('sub');
-      const clothing = ['TSH', 'JNS', 'DRS', 'JKT', 'SRT', 'PLO'];
-      const shoes = ['SNK', 'SDN', 'BTD', 'FLT', 'HGL', 'LFR'];
-      const opts = this.value === 'SHO' ? shoes : clothing;
+      const sizeSelect = document.getElementById('size');
+      const sizeInput = document.getElementById('size-input');
+      const subOther = document.getElementById('sub-other');
+      
+      let opts = clothingOpts;
+      if (cat === 'SHO') opts = shoesOpts;
+      else if (cat === 'ACC') opts = accOpts;
+      else if (cat === 'BAG') opts = bagsOpts;
+      
       sub.innerHTML = opts.map(o => `<option value="${o}">${subMap[o]}</option>`).join('');
+      
+      // Handle size open vs select
+      if (cat === 'BAG') {
+        sizeSelect.style.display = 'none';
+        sizeInput.style.display = 'block';
+      } else {
+        sizeSelect.style.display = 'block';
+        sizeInput.style.display = 'none';
+      }
+      
+      // Reset sub-other
+      subOther.style.display = 'none';
+      subOther.value = '';
+    });
+
+    document.getElementById('sub').addEventListener('change', function () {
+      const subOther = document.getElementById('sub-other');
+      if (this.value === 'OTH') {
+        subOther.style.display = 'block';
+      } else {
+        subOther.style.display = 'none';
+      }
     });
 
     document.getElementById('price').addEventListener('input', updateMarginDisplay);
@@ -801,12 +855,18 @@
 
     function generate() {
       const cat = document.getElementById('cat').value;
-      const sub = document.getElementById('sub').value;
+      const baseSub = document.getElementById('sub').value;
+      let subLabel = subMap[baseSub];
+      if (cat === 'ACC' && baseSub === 'OTH') {
+         const otherVal = document.getElementById('sub-other').value.trim();
+         if (otherVal) subLabel = otherVal;
+      }
+      
       const brand = document.getElementById('brand').value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 4) || 'XXX';
       const color = document.getElementById('color').value;
-      const size = document.getElementById('size').value;
+      const size = cat === 'BAG' ? (document.getElementById('size-input').value.trim() || 'OS') : document.getElementById('size').value;
       const fmt = document.getElementById('fmt').value;
-      const pname = document.getElementById('pname').value.trim() || `${subMap[sub]} ${colorMap[color]}`;
+      const pname = document.getElementById('pname').value.trim() || `${subLabel} ${colorMap[color]}`;
       const cost = parseFloat(document.getElementById('cost').value) || 0;
       const price = parseFloat(document.getElementById('price').value) || 0;
       const stock = parseInt(document.getElementById('stock').value) || 0;
@@ -825,7 +885,7 @@
       const m = calcMargin(cost, price);
       document.getElementById('meta-grid').innerHTML = `
       <div class="meta-pill"><div class="k">Category</div><div class="v">${catMap[cat]}</div></div>
-      <div class="meta-pill"><div class="k">Type</div><div class="v">${subMap[sub]}</div></div>
+      <div class="meta-pill"><div class="k">Type</div><div class="v">${subLabel}</div></div>
       <div class="meta-pill"><div class="k">Color</div><div class="v">${colorMap[color]}</div></div>
       <div class="meta-pill"><div class="k">Size</div><div class="v">${size}</div></div>
       <div class="meta-pill"><div class="k">Cost</div><div class="v">${cost ? 'RM ' + cost.toFixed(2) : '–'}</div></div>
@@ -835,7 +895,7 @@
     `;
 
       document.getElementById('barcode-num').textContent = barcodeValue;
-      document.getElementById('product-label').textContent = `${pname} · Size ${size} · ${brand}`;
+      document.getElementById('product-label').textContent = `${pname} · Size ${size} · RM ${price.toFixed(2)} · ${brand}`;
 
       try {
         JsBarcode('#barcode', barcodeValue, { format: fmt, width: 2, height: 60, displayValue: false, margin: 10, background: '#ffffff', lineColor: '#000000' });
@@ -843,7 +903,7 @@
         JsBarcode('#barcode', sku.replace(/[^A-Z0-9\-]/gi, ''), { format: 'CODE128', width: 2, height: 60, displayValue: false, margin: 10, background: '#ffffff', lineColor: '#000000' });
       }
 
-      const itemData = { sku, pname, cat: catMap[cat], sub: subMap[sub], color: colorMap[color], size, brand, cost, price, stock, barcodeValue, fmt, yr, seq };
+      const itemData = { sku, pname, cat: catMap[cat], sub: subLabel, subCode: baseSub, color: colorMap[color], size, brand, cost, price, stock, initialStock: stock, barcodeValue, fmt, yr, seq };
       currentItemData = itemData;
       inventory.push(itemData);
       document.getElementById('inv-count-badge').textContent = `(${inventory.length})`;
@@ -865,6 +925,7 @@
         const m = calcMargin(r.cost, r.price);
         const st = r.stock === 0 ? 'badge-out' : r.stock <= 3 ? 'badge-low' : 'badge-ok';
         const stLabel = r.stock === 0 ? 'Out of stock' : r.stock <= 3 ? 'Low stock' : 'In stock';
+        const sold = r.initialStock - r.stock;
         return `<tr>
         <td class="mono">${r.sku}</td>
         <td>${r.pname}</td>
@@ -873,6 +934,7 @@
         <td class="mono">${r.cost ? 'RM ' + r.cost.toFixed(2) : '–'}</td>
         <td class="mono">${r.price ? 'RM ' + r.price.toFixed(2) : '–'}</td>
         <td>${m !== null ? m + '%' : '–'}</td>
+        <td>${sold}</td>
         <td><input class="stock-input" type="number" value="${r.stock}" min="0" step="1" onchange="updateStock(${idx}, this.value)"/></td>
         <td><span class="badge ${st}">${stLabel}</span></td>
         <td><button class="btn btn-sm btn-danger" onclick="removeItem(${idx})">Remove</button></td>
@@ -904,14 +966,34 @@
       document.getElementById('s-stock').textContent = inventory.reduce((a, r) => a + r.stock, 0).toLocaleString();
       document.getElementById('s-value').textContent = 'RM ' + inventory.reduce((a, r) => a + (r.price * r.stock), 0).toFixed(0);
       document.getElementById('s-low').textContent = inventory.filter(r => r.stock <= 3).length;
+
+      const catCard = document.getElementById('category-summary-card');
+      if (inventory.length > 0) {
+        catCard.style.display = 'block';
+        const cats = {};
+        inventory.forEach(r => {
+          if (!cats[r.cat]) cats[r.cat] = { sold: 0, balance: 0, sales: 0 };
+          const sold = r.initialStock - r.stock;
+          cats[r.cat].sold += sold;
+          cats[r.cat].balance += r.stock;
+          cats[r.cat].sales += (sold * r.price);
+        });
+        document.getElementById('cat-summary-body').innerHTML = Object.keys(cats).map(k => {
+          const v = cats[k];
+          return `<tr><td>${k}</td><td>${v.sold}</td><td>${v.balance}</td><td>RM ${v.sales.toFixed(2)}</td></tr>`;
+        }).join('');
+      } else {
+        catCard.style.display = 'none';
+      }
     }
 
     function exportCSV() {
       if (!inventory.length) { alert('No inventory to export yet.'); return; }
-      const headers = ['SKU', 'Product Name', 'Category', 'Sub-type', 'Brand', 'Color', 'Size', 'Cost (MYR)', 'Price (MYR)', 'Margin %', 'Stock Qty', 'Inventory Value (MYR)', 'Barcode Value', 'Barcode Format'];
+      const headers = ['SKU', 'Product Name', 'Category', 'Sub-type', 'Brand', 'Color', 'Size', 'Cost (MYR)', 'Price (MYR)', 'Margin %', 'Sold', 'Balance', 'Inventory Value (MYR)', 'Barcode Value', 'Barcode Format'];
       const rows = inventory.map(r => {
         const m = calcMargin(r.cost, r.price) || '';
-        return [r.sku, r.pname, r.cat, r.sub, r.brand, r.color, r.size, r.cost.toFixed(2), r.price.toFixed(2), m, r.stock, (r.price * r.stock).toFixed(2), r.barcodeValue, r.fmt];
+        const sold = r.initialStock - r.stock;
+        return [r.sku, r.pname, r.cat, r.sub, r.brand, r.color, r.size, r.cost.toFixed(2), r.price.toFixed(2), m, sold, r.stock, (r.price * r.stock).toFixed(2), r.barcodeValue, r.fmt];
       });
       const csv = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
       const a = document.createElement('a');
